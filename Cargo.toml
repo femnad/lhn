@@ -1,0 +1,15 @@
+[package]
+name = "lhn"
+version = "0.1.0"
+authors = ["fcd <git@fcd.dev>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+flate2 = "1.0.19"
+regex = "1.4.2"
+tar = "0.4"
+ureq = "1.5.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"

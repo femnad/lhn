@@ -1,0 +1,8 @@
+archives:
+  - url: https://vscode-update.azurewebsites.net/${version}/linux-x64/stable
+    unless:
+      cmd: code --version
+      post: line 0
+    version: 1.52.1
+settings:
+  unpack_dir: ~/z/dy
