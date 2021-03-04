@@ -4,5 +4,10 @@ archives:
       cmd: code --version
       post: line 0
     version: 1.52.1
+packages:
+  common:
+    - fish
+  dnf:
+    - vim-X11
 settings:
   unpack_dir: ~/z/dy

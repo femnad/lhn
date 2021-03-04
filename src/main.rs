@@ -1,4 +1,5 @@
 mod post;
+mod pkg;
 
 extern crate ureq;
 extern crate structopt;
@@ -15,6 +16,7 @@ use tar::Archive;
 #[derive(Deserialize)]
 struct LocalState {
     archives: Vec<ArchiveInstallation>,
+    packages: pkg::Packages,
     settings: Settings,
 }
 
@@ -59,13 +61,10 @@ impl ArchiveInstallation {
 
 fn main() {
     let opt = Opt::from_args();
-    let file = File::open(&opt.file);
-    if file.is_err() {
-        eprintln!("Error opening file `{}`: {}", opt.file, file.as_ref().err().unwrap());
+    let file = File::open(&opt.file).unwrap_or_else(|e| {
+        eprintln!("Error opening file `{}`: {}", opt.file, e);
         exit(1);
-    }
-
-    let file = file.unwrap();
+    });
 
     let local_state: LocalState = serde_yaml::from_reader(file).unwrap();
 
@@ -101,4 +100,6 @@ fn main() {
         let mut tar = Archive::new(tar);
         tar.unpack(unpack_dir).unwrap();
     }
+
+    pkg::install(local_state.packages);
 }
