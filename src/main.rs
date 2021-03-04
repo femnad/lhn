@@ -1,13 +1,15 @@
 mod post;
 
 extern crate ureq;
+extern crate structopt;
 
 use std::env;
 use std::fs::File;
-use std::process::Command;
+use std::process::{Command, exit};
 
 use flate2::read::GzDecoder;
 use serde::Deserialize;
+use structopt::StructOpt;
 use tar::Archive;
 
 #[derive(Deserialize)]
@@ -34,6 +36,13 @@ struct Unless {
     post: String,
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(name = "lhn")]
+struct Opt {
+    #[structopt(short = "f", long = "file", default_value = "lhn.yml")]
+    file: String,
+}
+
 impl ArchiveInstallation {
     fn replace_version(&self, text: &String) -> String {
         return text.replace("${version}", &self.version);
@@ -49,7 +58,14 @@ impl ArchiveInstallation {
 }
 
 fn main() {
-    let file = File::open("lhn.yml").unwrap();
+    let opt = Opt::from_args();
+    let file = File::open(&opt.file);
+    if file.is_err() {
+        eprintln!("Error opening file `{}`: {}", opt.file, file.as_ref().err().unwrap());
+        exit(1);
+    }
+
+    let file = file.unwrap();
 
     let local_state: LocalState = serde_yaml::from_reader(file).unwrap();
 
