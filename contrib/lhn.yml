@@ -3,7 +3,7 @@ archives:
     unless:
       cmd: code --version
       post: line 0
-    version: 1.52.1
+    version: 1.54.1
 packages:
   common:
     - fish

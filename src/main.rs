@@ -73,7 +73,6 @@ fn main() {
 
     for archive in archives {
         let url = &archive.get_url();
-        let resp = ureq::get(url).call();
         let unless = archive.get_unless();
         let cmd_tokens = unless.cmd.as_str().split(" ").collect::<Vec<&str>>();
         let cmd = &cmd_tokens[0];
@@ -96,6 +95,13 @@ fn main() {
 
         let home = env::var("HOME").unwrap();
         let unpack_dir = settings.unpack_dir.replace("~", &home);
+        let resp = ureq::get(url).call();
+
+        if !resp.ok() {
+            println!("Unable to download from {}, response {}", url, resp.status());
+            continue;
+        }
+
         let tar = GzDecoder::new(resp.into_reader());
         let mut tar = Archive::new(tar);
         tar.unpack(unpack_dir).unwrap();
