@@ -7,6 +7,8 @@ archives:
 packages:
   common:
     - fish
+  apt:
+    - vim-gtk3
   dnf:
     - vim-X11
 settings:

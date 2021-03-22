@@ -7,6 +7,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Packages {
     common: Vec<String>,
+    apt: Vec<String>,
     dnf: Vec<String>,
 }
 
@@ -58,10 +59,23 @@ impl PackageManager for Dnf {
     }
 }
 
+struct Apt {}
+
+impl PackageManager for Apt {
+    fn get_specialized_packages(&self, packages: Packages) -> Vec<String> {
+        packages.apt
+    }
+
+    fn get_install_command(&self) -> Vec<&str> {
+        vec!["apt", "install", "-y"]
+    }
+}
+
 fn get_package_manager() -> Result<Box<dyn PackageManager>, String> {
     let os_id = get_os_id();
     match os_id.as_str() {
         "fedora" => Ok(Box::new(Dnf {})),
+        "debian" | "ubuntu" => Ok(Box::new(Apt {})),
         _ => Err("Cannot determine package manager".to_string()),
     }
 }
