@@ -12,6 +12,8 @@ use flate2::read::GzDecoder;
 use serde::Deserialize;
 use structopt::StructOpt;
 use tar::Archive;
+use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Deserialize)]
 struct LocalState {
@@ -27,12 +29,16 @@ struct Settings {
 
 #[derive(Deserialize)]
 struct ArchiveInstallation {
+    #[serde(default)]
     version: String,
+    #[serde(default)]
     unless: Unless,
+    #[serde(default)]
+    link: Vec<HashMap<String, String>>,
     url: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 struct Unless {
     cmd: String,
     post: String,
@@ -104,7 +110,18 @@ fn main() {
 
         let tar = GzDecoder::new(resp.into_reader());
         let mut tar = Archive::new(tar);
-        tar.unpack(unpack_dir).unwrap();
+        tar.unpack(unpack_dir.clone()).unwrap();
+
+        archive.link.iter().for_each(|link_spec| {
+            link_spec.iter().for_each(|(original, link)| {
+                let original = archive.replace_version(original);
+                let original = Path::new(&unpack_dir).join(original);
+
+                println!("{}", original.to_str().unwrap());
+                let link = link.replace("~", home.as_str());
+                std::os::unix::fs::symlink(original, link).unwrap();
+            })
+        });
     }
 
     pkg::install(local_state.packages);

@@ -1,10 +1,11 @@
 use regex::Regex;
-use crate::post::Operation::Line;
+use crate::post::Operation::{Field,Line};
 
 const INDEX_REGEX: &str = r"[0-9]+";
 
 enum Operation {
-    Line(u32)
+    Line(u32),
+    Field(u32),
 }
 
 #[derive(Debug)]
@@ -26,6 +27,9 @@ fn parse(op_str: &str) -> Result<Operation, ParseError> {
     if operation.eq("line") && re.is_match(index) {
         let index: u32 = index.parse().unwrap();
         return Ok(Line(index));
+    } else if operation.eq("field") && re.is_match(index) {
+        let index: u32 = index.parse().unwrap();
+        return Ok(Field(index));
     }
     return Err(ParseError::new("no matching operations"));
 }
@@ -35,16 +39,36 @@ fn head(input: &str, count: u32) -> String {
     return lines.nth(count as usize).unwrap().to_string();
 }
 
+fn cut(input: &str, count: u32) -> String {
+    let mut lines = input.split(" ").into_iter();
+    return lines.nth(count as usize).unwrap().to_string();
+}
+
 fn do_run_op(input: &str, operation: Operation) -> String {
     match operation {
         Line(count) => head(input, count),
+        Field(count) => cut(input, count),
     }
 }
 
+fn do_run_ops(cmd_output: &str, ops: &str) -> String {
+    let mut result = String::from(cmd_output.clone());
+    let ops: Vec<&str> = ops.split("|")
+        .map(|op| op.trim())
+        .collect();
+
+    ops.iter().for_each(|op| {
+        let op = parse(op);
+        match op {
+            Ok(operation) => {
+                result = do_run_op(result.as_str(), operation)
+            },
+            Err(_) => {},
+        }
+    });
+    return result;
+}
+
 pub fn run_op(cmd_output: &str, post: &str) -> String {
-    let operation = parse(post);
-    if operation.is_err() {
-        return cmd_output.to_string()
-    }
-    return do_run_op(cmd_output, operation.unwrap())
+    return do_run_ops(cmd_output, post);
 }

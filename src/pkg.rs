@@ -3,6 +3,7 @@ use std::io::Read;
 use std::process::Command;
 
 use serde::Deserialize;
+use std::collections::HashSet;
 
 #[derive(Deserialize)]
 pub struct Packages {
@@ -30,6 +31,22 @@ fn get_os_id() -> String {
 trait PackageManager {
     fn get_specialized_packages(&self, packages: Packages) -> Vec<String>;
     fn get_install_command(&self) -> Vec<&str>;
+    fn get_installed(&self, packages: Vec<String>) -> Vec<String>;
+
+    fn get_non_installed(&self, packages: Packages) -> Vec<String> {
+        let packages = self.get_package_list(packages);
+
+        let installed: HashSet<String> = self.get_installed(packages.clone()).into_iter().collect();
+
+        let non_installed: HashSet<String> = packages
+            .into_iter()
+            .collect();
+
+        let missing = non_installed.difference(&installed);
+        return missing
+            .map(|p| p.clone())
+            .collect::<Vec<_>>()
+    }
 
     fn get_package_list(&self, packages: Packages) -> Vec<String> {
         let mut package_list = packages.common.clone();
@@ -38,13 +55,19 @@ trait PackageManager {
     }
 
     fn install(&self, packages: Packages) {
+        let packages_to_install = self.get_non_installed(packages);
+        if packages_to_install.len() == 0 {
+            return;
+        }
+
         let output = Command::new("sudo")
             .args(self.get_install_command())
-            .args(self.get_package_list(packages))
+            .args(packages_to_install)
             .output()
-            .expect("error installing packages with dnf");
+            .expect("error installing packages");
         println!("{}", String::from_utf8(output.stdout).unwrap());
     }
+
 }
 
 struct Dnf {}
@@ -57,6 +80,22 @@ impl PackageManager for Dnf {
     fn get_install_command(&self) -> Vec<&str> {
         vec!["dnf", "install", "-y"]
     }
+
+    fn get_installed(&self, packages: Vec<String>) -> Vec<String> {
+        let output = Command::new("dnf")
+            .args(vec!["list", "installed"])
+            .args(packages)
+            .output()
+            .expect("error listing installed packages with dnf");
+
+        let output = String::from_utf8(output.stdout).unwrap();
+        return output.split("\n")
+            .skip(1) // Installed packages
+            .map(|line| {
+                String::from(line.split(".").nth(0).unwrap())
+            }) //<package>.<arch>
+            .collect();
+    }
 }
 
 struct Apt {}
@@ -68,6 +107,10 @@ impl PackageManager for Apt {
 
     fn get_install_command(&self) -> Vec<&str> {
         vec!["apt", "install", "-y"]
+    }
+
+    fn get_installed(&self, _packages: Vec<String>) -> Vec<String> {
+        unimplemented!()
     }
 }
 
