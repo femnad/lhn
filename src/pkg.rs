@@ -128,7 +128,7 @@ impl PackageManager for Apt {
 
         let field_pattern = Regex::new(NON_WHITESPACE_PATTERN).unwrap();
 
-        let fail = output.trim().split("\n")
+        return output.trim().split("\n")
             .skip(5) // headers and separator
             .map(|line| {
                 let fields = field_pattern.captures_iter(line)
@@ -139,7 +139,6 @@ impl PackageManager for Apt {
                 String::from(name)
             })
             .collect();
-        return fail;
     }
 }
 
