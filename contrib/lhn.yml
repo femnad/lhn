@@ -1,5 +1,7 @@
 archives:
   - url: https://az764295.vo.msecnd.net/stable/3c4e3df9e89829dce27b7b5c24508306b151f30d/code-stable-x64-1618307634.tar.gz
+    link:
+      - VSCode-linux-x64/bin/code: ~/bin/code
     unless:
       cmd: code --version
       post: line 0
