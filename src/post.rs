@@ -1,5 +1,5 @@
+use crate::post::Operation::{Field, Line};
 use regex::Regex;
-use crate::post::Operation::{Field,Line};
 
 const INDEX_REGEX: &str = r"[0-9]+";
 
@@ -10,12 +10,14 @@ enum Operation {
 
 #[derive(Debug)]
 struct ParseError {
-    reason: String
+    reason: String,
 }
 
 impl ParseError {
     fn new(reason: &str) -> ParseError {
-        ParseError { reason: reason.to_string() }
+        ParseError {
+            reason: reason.to_string(),
+        }
     }
 }
 
@@ -53,17 +55,13 @@ fn do_run_op(input: &str, operation: Operation) -> String {
 
 fn do_run_ops(cmd_output: &str, ops: &str) -> String {
     let mut result = String::from(cmd_output.clone());
-    let ops: Vec<&str> = ops.split("|")
-        .map(|op| op.trim())
-        .collect();
+    let ops: Vec<&str> = ops.split("|").map(|op| op.trim()).collect();
 
     ops.iter().for_each(|op| {
         let op = parse(op);
         match op {
-            Ok(operation) => {
-                result = do_run_op(result.as_str(), operation)
-            },
-            Err(_) => {},
+            Ok(operation) => result = do_run_op(result.as_str(), operation),
+            Err(_) => {}
         }
     });
     return result;

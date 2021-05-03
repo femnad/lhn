@@ -1,19 +1,19 @@
 mod config;
-mod post;
 mod pkg;
+mod post;
 
-extern crate ureq;
 extern crate structopt;
+extern crate ureq;
 
 use std::env;
-use std::process::{Command, exit};
+use std::process::{exit, Command};
 
 use flate2::read::GzDecoder;
 use serde::Deserialize;
-use structopt::StructOpt;
-use tar::Archive;
 use std::collections::HashMap;
 use std::path::Path;
+use structopt::StructOpt;
+use tar::Archive;
 
 #[derive(Deserialize)]
 struct LocalState {
@@ -87,9 +87,7 @@ fn main() {
         let cmd = &cmd_tokens[0];
         let args = &cmd_tokens[1..];
 
-        let cmd_output = Command::new(cmd)
-            .args(args)
-            .output();
+        let cmd_output = Command::new(cmd).args(args).output();
 
         if cmd_output.is_ok() {
             let cmd_output = String::from_utf8(cmd_output.unwrap().stdout).unwrap();
@@ -107,7 +105,11 @@ fn main() {
         let resp = ureq::get(url).call();
 
         if !resp.ok() {
-            println!("Unable to download from {}, response {}", url, resp.status());
+            println!(
+                "Unable to download from {}, response {}",
+                url,
+                resp.status()
+            );
             continue;
         }
 

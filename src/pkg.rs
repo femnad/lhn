@@ -9,8 +9,8 @@ use serde::Deserialize;
 use std::collections::HashSet;
 use std::ops::Deref;
 
+const NON_WHITESPACE_PATTERN: &str = r"[^\s]+";
 const OS_RELEASE_FILE: &str = "/etc/os-release";
-const NON_WHITESPACE_PATTERN :&str = r"[^\s]+";
 
 #[derive(Deserialize)]
 pub struct Packages {
@@ -43,14 +43,10 @@ trait PackageManager {
 
         let installed: HashSet<String> = self.get_installed(packages.clone()).into_iter().collect();
 
-        let non_installed: HashSet<String> = packages
-            .into_iter()
-            .collect();
+        let non_installed: HashSet<String> = packages.into_iter().collect();
 
         let missing = non_installed.difference(&installed);
-        return missing
-            .map(|p| p.clone())
-            .collect::<Vec<_>>()
+        return missing.map(|p| p.clone()).collect::<Vec<_>>();
     }
 
     fn get_package_list(&self, packages: Packages) -> Vec<String> {
@@ -73,7 +69,6 @@ trait PackageManager {
             .output()
             .expect("error installing packages");
     }
-
 }
 
 struct Dnf {}
@@ -95,7 +90,8 @@ impl PackageManager for Dnf {
             .expect("error listing installed packages with dnf");
 
         let output = String::from_utf8(output.stdout).unwrap();
-        return output.split("\n")
+        return output
+            .split("\n")
             .skip(1) // header
             .map(|line| {
                 //<package>.<arch>
@@ -128,10 +124,13 @@ impl PackageManager for Apt {
 
         let field_pattern = Regex::new(NON_WHITESPACE_PATTERN).unwrap();
 
-        return output.trim().split("\n")
+        return output
+            .trim()
+            .split("\n")
             .skip(5) // headers and separator
             .map(|line| {
-                let fields = field_pattern.captures_iter(line)
+                let fields = field_pattern
+                    .captures_iter(line)
                     .map(|c| c.get(0).unwrap().as_str())
                     .collect::<Vec<&str>>();
                 //<status><err> <name> <version> <arch> <desc>
