@@ -1,9 +1,16 @@
+extern crate regex;
+
 use std::fs::File;
 use std::io::Read;
 use std::process::Command;
 
+use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashSet;
+use std::ops::Deref;
+
+const OS_RELEASE_FILE: &str = "/etc/os-release";
+const NON_WHITESPACE_PATTERN :&str = r"[^\s]+";
 
 #[derive(Deserialize)]
 pub struct Packages {
@@ -11,8 +18,6 @@ pub struct Packages {
     apt: Vec<String>,
     dnf: Vec<String>,
 }
-
-const OS_RELEASE_FILE: &str = "/etc/os-release";
 
 fn get_os_id() -> String {
     let mut os_release = File::open(OS_RELEASE_FILE)
@@ -57,15 +62,16 @@ trait PackageManager {
     fn install(&self, packages: Packages) {
         let packages_to_install = self.get_non_installed(packages);
         if packages_to_install.len() == 0 {
+            println!("No packages to install");
             return;
         }
 
-        let output = Command::new("sudo")
+        println!("Installing packages: {}", packages_to_install.join(", "));
+        Command::new("sudo")
             .args(self.get_install_command())
             .args(packages_to_install)
             .output()
             .expect("error installing packages");
-        println!("{}", String::from_utf8(output.stdout).unwrap());
     }
 
 }
@@ -92,8 +98,9 @@ impl PackageManager for Dnf {
         return output.split("\n")
             .skip(1) // header
             .map(|line| {
+                //<package>.<arch>
                 String::from(line.split(".").nth(0).unwrap())
-            }) //<package>.<arch>
+            })
             .collect();
     }
 }
@@ -112,17 +119,27 @@ impl PackageManager for Apt {
     fn get_installed(&self, packages: Vec<String>) -> Vec<String> {
         let output = Command::new("dpkg-query")
             .arg("--list")
+            .arg("--no-pager")
             .args(packages)
             .output()
             .expect("error listing installed packages with apt");
 
         let output = String::from_utf8(output.stdout).unwrap();
-        return output.trim().split("\n")
+
+        let field_pattern = Regex::new(NON_WHITESPACE_PATTERN).unwrap();
+
+        let fail = output.trim().split("\n")
             .skip(5) // headers and separator
             .map(|line| {
-                String::from(line.split(" ").nth(1).unwrap())
-            }) //<status><err> <name> <version> <arch> <desc>
+                let fields = field_pattern.captures_iter(line)
+                    .map(|c| c.get(0).unwrap().as_str())
+                    .collect::<Vec<&str>>();
+                //<status><err> <name> <version> <arch> <desc>
+                let name = fields.get(1).unwrap().deref();
+                String::from(name)
+            })
             .collect();
+        return fail;
     }
 }
 
