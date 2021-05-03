@@ -40,7 +40,9 @@ struct ArchiveInstallation {
 
 #[derive(Deserialize, Default)]
 struct Unless {
+    #[serde(default)]
     cmd: String,
+    #[serde(default)]
     post: String,
 }
 
