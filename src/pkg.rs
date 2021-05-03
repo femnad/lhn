@@ -90,7 +90,7 @@ impl PackageManager for Dnf {
 
         let output = String::from_utf8(output.stdout).unwrap();
         return output.split("\n")
-            .skip(1) // Installed packages
+            .skip(1) // header
             .map(|line| {
                 String::from(line.split(".").nth(0).unwrap())
             }) //<package>.<arch>
@@ -109,8 +109,20 @@ impl PackageManager for Apt {
         vec!["apt", "install", "-y"]
     }
 
-    fn get_installed(&self, _packages: Vec<String>) -> Vec<String> {
-        unimplemented!()
+    fn get_installed(&self, packages: Vec<String>) -> Vec<String> {
+        let output = Command::new("dpkg-query")
+            .arg("--list")
+            .args(packages)
+            .output()
+            .expect("error listing installed packages with apt");
+
+        let output = String::from_utf8(output.stdout).unwrap();
+        return output.trim().split("\n")
+            .skip(5) // headers and separator
+            .map(|line| {
+                String::from(line.split(" ").nth(1).unwrap())
+            }) //<status><err> <name> <version> <arch> <desc>
+            .collect();
     }
 }
 

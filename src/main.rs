@@ -1,3 +1,4 @@
+mod config;
 mod post;
 mod pkg;
 
@@ -5,7 +6,6 @@ extern crate ureq;
 extern crate structopt;
 
 use std::env;
-use std::fs::File;
 use std::process::{Command, exit};
 
 use flate2::read::GzDecoder;
@@ -47,8 +47,8 @@ struct Unless {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "lhn")]
 struct Opt {
-    #[structopt(short = "f", long = "file", default_value = "lhn.yml")]
-    file: String,
+    #[structopt(short = "f", long = "config", default_value = "lhn.yml")]
+    config: String,
 }
 
 impl ArchiveInstallation {
@@ -67,12 +67,13 @@ impl ArchiveInstallation {
 
 fn main() {
     let opt = Opt::from_args();
-    let file = File::open(&opt.file).unwrap_or_else(|e| {
-        eprintln!("Error opening file `{}`: {}", opt.file, e);
+
+    let content = config::get_content(&opt.config).unwrap_or_else(|e| {
+        eprintln!("Error reading config `{}`: {}", opt.config, e);
         exit(1);
     });
 
-    let local_state: LocalState = serde_yaml::from_reader(file).unwrap();
+    let local_state: LocalState = serde_yaml::from_str(&content).unwrap();
 
     let settings = local_state.settings;
     let archives = local_state.archives;
