@@ -10,7 +10,7 @@ edition = "2018"
 flate2 = "1.0.19"
 regex = "1.4.2"
 tar = "0.4"
-ureq = "1.5.2"
+ureq = "2.1.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 structopt = { version = "0.3", default-features = false }

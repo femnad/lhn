@@ -1,4 +1,5 @@
 mod config;
+mod download;
 mod pkg;
 mod post;
 
@@ -102,31 +103,32 @@ fn main() {
 
         let home = env::var("HOME").unwrap();
         let unpack_dir = settings.unpack_dir.replace("~", &home);
-        let resp = ureq::get(url).call();
 
-        if !resp.ok() {
+        match download::get_reader(url) {
+            Ok(reader) => {
+                let tar = GzDecoder::new(reader);
+                let mut tar = Archive::new(tar);
+                tar.unpack(unpack_dir.clone()).unwrap();
+
+                archive.link.iter().for_each(|link_spec| {
+                    link_spec.iter().for_each(|(original, link)| {
+                        let original = archive.replace_version(original);
+                        let original = Path::new(&unpack_dir).join(original);
+
+                        println!("{}", original.to_str().unwrap());
+                        let link = link.replace("~", home.as_str());
+                        std::os::unix::fs::symlink(original, link).unwrap();
+                    })
+                });
+            },
+            Err(e) => {
             println!(
                 "Unable to download from {}, response {}",
                 url,
-                resp.status()
-            );
-            continue;
+                e)
+            },
         }
 
-        let tar = GzDecoder::new(resp.into_reader());
-        let mut tar = Archive::new(tar);
-        tar.unpack(unpack_dir.clone()).unwrap();
-
-        archive.link.iter().for_each(|link_spec| {
-            link_spec.iter().for_each(|(original, link)| {
-                let original = archive.replace_version(original);
-                let original = Path::new(&unpack_dir).join(original);
-
-                println!("{}", original.to_str().unwrap());
-                let link = link.replace("~", home.as_str());
-                std::os::unix::fs::symlink(original, link).unwrap();
-            })
-        });
     }
 
     pkg::install(local_state.packages);
