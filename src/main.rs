@@ -2,6 +2,7 @@ mod config;
 mod download;
 mod pkg;
 mod post;
+mod repo;
 
 extern crate structopt;
 extern crate ureq;
@@ -20,11 +21,13 @@ use tar::Archive;
 struct LocalState {
     archives: Vec<ArchiveInstallation>,
     packages: pkg::Packages,
+    repos: Vec<repo::Repo>,
     settings: Settings,
 }
 
 #[derive(Deserialize)]
 struct Settings {
+    clone_dir: String,
     unpack_dir: String,
 }
 
@@ -68,6 +71,11 @@ impl ArchiveInstallation {
     }
 }
 
+fn expand_user(path: &String) -> String {
+    let home = env::var("HOME").unwrap();
+    path.replace("~", &home)
+}
+
 fn main() {
     let opt = Opt::from_args();
 
@@ -101,8 +109,7 @@ fn main() {
 
         println!("Downloading {}", url);
 
-        let home = env::var("HOME").unwrap();
-        let unpack_dir = settings.unpack_dir.replace("~", &home);
+        let unpack_dir = expand_user(&settings.unpack_dir);
 
         match download::get_reader(url) {
             Ok(reader) => {
@@ -116,7 +123,7 @@ fn main() {
                         let original = Path::new(&unpack_dir).join(original);
 
                         println!("{}", original.to_str().unwrap());
-                        let link = link.replace("~", home.as_str());
+                        let link = expand_user(&link.to_string());
                         std::os::unix::fs::symlink(original, link).unwrap();
                     })
                 });
@@ -132,4 +139,6 @@ fn main() {
     }
 
     pkg::install(local_state.packages);
+
+    repo::clone_repos(local_state.repos, expand_user(&settings.clone_dir));
 }

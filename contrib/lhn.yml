@@ -21,5 +21,8 @@ packages:
     - vim-gtk3
   dnf:
     - vim-X11
+repos:
+  - url: https://github.com/qmk/qmk_firmware.git
 settings:
+  clone_dir: ~/z/gl
   unpack_dir: ~/z/dy
