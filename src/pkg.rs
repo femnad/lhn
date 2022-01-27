@@ -21,14 +21,14 @@ pub struct Packages {
 
 fn get_os_id() -> String {
     let mut os_release = File::open(OS_RELEASE_FILE)
-        .expect(format!("Unable to open OS release file {}", OS_RELEASE_FILE).as_str());
+        .unwrap_or_else(|_| panic!("Unable to open OS release file {}", OS_RELEASE_FILE));
     let mut os_release_content = String::new();
     os_release.read_to_string(&mut os_release_content).unwrap();
     os_release_content
-        .split("\n")
+        .split('\n')
         .filter(|line| line.starts_with("ID="))
-        .map(|line| line.split("=").last().unwrap())
-        .nth(0)
+        .map(|line| line.split('=').last().unwrap())
+        .next()
         .expect("Unable to find OS ID")
         .to_string()
 }
@@ -46,7 +46,7 @@ trait PackageManager {
         let non_installed: HashSet<String> = packages.into_iter().collect();
 
         let missing = non_installed.difference(&installed);
-        return missing.map(|p| p.clone()).collect::<Vec<_>>();
+        missing.cloned().collect::<Vec<_>>()
     }
 
     fn get_package_list(&self, packages: Packages) -> Vec<String> {
@@ -57,7 +57,7 @@ trait PackageManager {
 
     fn install(&self, packages: Packages) {
         let packages_to_install = self.get_non_installed(packages);
-        if packages_to_install.len() == 0 {
+        if packages_to_install.is_empty() {
             println!("No packages to install");
             return;
         }
@@ -91,11 +91,11 @@ impl PackageManager for Dnf {
 
         let output = String::from_utf8(output.stdout).unwrap();
         return output
-            .split("\n")
+            .split('\n')
             .skip(1) // header
             .map(|line| {
                 //<package>.<arch>
-                String::from(line.split(".").nth(0).unwrap())
+                String::from(line.split('.').next().unwrap())
             })
             .collect();
     }
@@ -126,7 +126,7 @@ impl PackageManager for Apt {
 
         return output
             .trim()
-            .split("\n")
+            .split('\n')
             .skip(5) // headers and separator
             .map(|line| {
                 let fields = field_pattern

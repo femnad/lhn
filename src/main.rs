@@ -64,7 +64,7 @@ struct Opt {
 }
 
 impl ArchiveInstallation {
-    fn replace_version(&self, text: &String) -> String {
+    fn replace_version(&self, text: &str) -> String {
         text.replace("${version}", &self.version)
     }
 
@@ -77,7 +77,7 @@ impl ArchiveInstallation {
     }
 }
 
-fn expand_user(path: &String) -> String {
+fn expand_user(path: &str) -> String {
     let home = env::var("HOME").unwrap();
     path.replace("~", &home)
 }
@@ -98,13 +98,13 @@ fn main() {
     for archive in archives {
         let url = &archive.get_url();
         let unless = archive.get_unless();
-        let cmd_tokens = unless.cmd.as_str().split(" ").collect::<Vec<&str>>();
+        let cmd_tokens = unless.cmd.as_str().split(' ').collect::<Vec<&str>>();
         let cmd = &cmd_tokens[0];
         let args = &cmd_tokens[1..];
 
         let cmd_output = Command::new(cmd).args(args).output();
 
-        if cmd_output.is_ok() {
+        if let Ok(..) = cmd_output {
             let cmd_output = String::from_utf8(cmd_output.unwrap().stdout).unwrap();
             let post_proc = post::run_op(cmd_output.as_str(), unless.post.as_str());
             if post_proc.eq(archive.version.as_str()) {

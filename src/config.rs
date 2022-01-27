@@ -10,10 +10,10 @@ pub fn get_content(target: &str) -> Result<String, io::Error> {
             Ok(resp) => return Ok(resp.into_string().unwrap()),
             Err(Error::Status(_code, response)) => {
                 return Err(io::Error::new(io::ErrorKind::Other, response.status_text()))
-            },
+            }
             Err(_) => return Err(io::Error::new(io::ErrorKind::Other, "Transport error")),
         }
     }
 
-    return fs::read_to_string(target);
+    fs::read_to_string(target)
 }

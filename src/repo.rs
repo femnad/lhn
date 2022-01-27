@@ -8,9 +8,9 @@ pub struct Repo {
     url: String,
 }
 
-fn get_name(url: &String) -> String {
-    let name = url.split("/").last().unwrap();
-    name.split(".").nth(0).unwrap().to_string()
+fn get_name(url: &str) -> String {
+    let name = url.split('/').last().unwrap();
+    name.split('.').next().unwrap().to_string()
 }
 
 pub fn clone_repos(repos: Vec<Repo>, clone_dir: String) {

@@ -23,7 +23,7 @@ impl ParseError {
 
 fn parse(op_str: &str) -> Result<Operation, ParseError> {
     let re = Regex::new(INDEX_REGEX).unwrap();
-    let tokens = op_str.split(" ").collect::<Vec<&str>>();
+    let tokens = op_str.split(' ').collect::<Vec<&str>>();
     let operation = *tokens.first().unwrap();
     let index = *tokens.last().unwrap();
     if operation.eq("line") && re.is_match(index) {
@@ -33,17 +33,17 @@ fn parse(op_str: &str) -> Result<Operation, ParseError> {
         let index: u32 = index.parse().unwrap();
         return Ok(Field(index));
     }
-    return Err(ParseError::new("no matching operations"));
+    Err(ParseError::new("no matching operations"))
 }
 
 fn head(input: &str, count: u32) -> String {
-    let mut lines = input.split("\n").into_iter();
-    return lines.nth(count as usize).unwrap().to_string();
+    let mut lines = input.split('\n');
+    lines.nth(count as usize).unwrap().to_string()
 }
 
 fn cut(input: &str, count: u32) -> String {
-    let mut lines = input.split(" ").into_iter();
-    return lines.nth(count as usize).unwrap().to_string();
+    let mut lines = input.split(' ');
+    lines.nth(count as usize).unwrap().to_string()
 }
 
 fn do_run_op(input: &str, operation: Operation) -> String {
@@ -54,19 +54,19 @@ fn do_run_op(input: &str, operation: Operation) -> String {
 }
 
 fn do_run_ops(cmd_output: &str, ops: &str) -> String {
-    let mut result = String::from(cmd_output.clone());
-    let ops: Vec<&str> = ops.split("|").map(|op| op.trim()).collect();
+    let mut result = String::from(&(*cmd_output));
+    let ops: Vec<&str> = ops.split('|').map(|op| op.trim()).collect();
 
     ops.iter().for_each(|op| {
         let op = parse(op);
         match op {
             Ok(operation) => result = do_run_op(result.as_str(), operation),
-            Err(_) => {}
+            Err(fail) => panic!("Error parsing operation: {}", fail.reason),
         }
     });
-    return result;
+    result
 }
 
 pub fn run_op(cmd_output: &str, post: &str) -> String {
-    return do_run_ops(cmd_output, post);
+    do_run_ops(cmd_output, post)
 }
