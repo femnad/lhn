@@ -12,7 +12,6 @@ use std::process::{exit, Command};
 
 use flate2::read::GzDecoder;
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::path::Path;
 use structopt::StructOpt;
 use tar::Archive;
@@ -32,13 +31,20 @@ struct Settings {
 }
 
 #[derive(Deserialize)]
+struct Link {
+    src: String,
+    #[serde(default)]
+    dest: String,
+}
+
+#[derive(Deserialize)]
 struct ArchiveInstallation {
     #[serde(default)]
     version: String,
     #[serde(default)]
     unless: Unless,
     #[serde(default)]
-    link: Vec<HashMap<String, String>>,
+    links: Vec<Link>,
     url: String,
 }
 
@@ -59,15 +65,15 @@ struct Opt {
 
 impl ArchiveInstallation {
     fn replace_version(&self, text: &String) -> String {
-        return text.replace("${version}", &self.version);
+        text.replace("${version}", &self.version)
     }
 
     fn get_unless(&self) -> &Unless {
-        return &self.unless;
+        &self.unless
     }
 
     fn get_url(&self) -> String {
-        return self.replace_version(&self.url);
+        self.replace_version(&self.url)
     }
 }
 
@@ -117,25 +123,19 @@ fn main() {
                 let mut tar = Archive::new(tar);
                 tar.unpack(unpack_dir.clone()).unwrap();
 
-                archive.link.iter().for_each(|link_spec| {
-                    link_spec.iter().for_each(|(original, link)| {
-                        let original = archive.replace_version(original);
-                        let original = Path::new(&unpack_dir).join(original);
+                archive.links.iter().for_each(|link_spec| {
+                    let original = archive.replace_version(&link_spec.src);
+                    let original = Path::new(&unpack_dir).join(original);
 
-                        println!("{}", original.to_str().unwrap());
-                        let link = expand_user(&link.to_string());
-                        std::os::unix::fs::symlink(original, link).unwrap();
-                    })
+                    println!("{}", original.to_str().unwrap());
+                    let link = expand_user(&link_spec.dest.to_string());
+                    std::os::unix::fs::symlink(original, link).unwrap();
                 });
-            },
+            }
             Err(e) => {
-            println!(
-                "Unable to download from {}, response {}",
-                url,
-                e)
-            },
+                println!("Unable to download from {}, response {}", url, e)
+            }
         }
-
     }
 
     pkg::install(local_state.packages);
